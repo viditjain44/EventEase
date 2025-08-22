@@ -1,41 +1,52 @@
-import { prisma } from "@/app/lib/prisma"
-import bcrypt from "bcrypt"
-import { NextResponse } from "next/server"
+import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import {prisma} from "../../lib/prisma";
+import { Role } from "@prisma/client"; // 👈 import Role enum
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
-    const { name, email, password, role } = body
+    const { name, email, password, role } = await req.json();
 
-    if (!name || !email || !password || !role) {
-      return NextResponse.json({ error: "All fields are required" }, { status: 400 })
+    if (!email || !password || !role) {
+      return NextResponse.json(
+        { success: false, error: "Missing required fields" },
+        { status: 400 }
+      );
     }
 
-    // check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    })
+    // 👇 Validate role against enum
+    if (!Object.values(Role).includes(role)) {
+      return NextResponse.json(
+        { success: false, error: `Invalid role: ${role}` },
+        { status: 400 }
+      );
+    }
 
+    const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      return NextResponse.json({ error: "User already exists" }, { status: 400 })
+      return NextResponse.json(
+        { success: false, error: "User already exists" },
+        { status: 400 }
+      );
     }
 
-    // hash password
-    const hashedPassword = await bcrypt.hash(password, 10)
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // create new user
-    const newUser = await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
-        name,
+        name: name || null,
         email,
         password: hashedPassword,
-        role, // must be one of: "ADMIN" | "STAFF" | "EVENT_OWNER"
+        role: role as Role, // ✅ cast to enum
       },
-    })
+    });
 
-    return NextResponse.json({ message: "User registered successfully", user: newUser })
-  } catch (error) {
-    console.error(error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ success: true, user });
+  } catch (err: any) {
+    console.error("❌ Register API Error:", err.message || err);
+    return NextResponse.json(
+      { success: false, error: err.message || "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

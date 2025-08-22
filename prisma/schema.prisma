@@ -13,15 +13,20 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+enum Role {
+  ADMIN
+  STAFF
+  USER
+}
+
 model User {
-  id        String   @id @default(uuid()) 
+  id        String   @id @default(uuid())
+  name      String ?  // 👈 add this
   email     String   @unique
   password  String
-  role      String  ?
-  name      String?
+  role      Role
   events    Event[]  @relation("UserEvents")
-  rsvps     RSVP[]
-  createdAt DateTime @default(now()) 
+  createdAt DateTime @default(now())
 }
 
 model Event {
@@ -38,10 +43,9 @@ model Event {
 
 model RSVP {
   id        String   @id @default(uuid())
-  userId    String
+  name      String
+  email     String
   eventId   String
-  status    String   // "yes", "no", "maybe"
-  user      User     @relation(fields: [userId], references: [id])
   event     Event    @relation(fields: [eventId], references: [id])
   createdAt DateTime @default(now())
 }
