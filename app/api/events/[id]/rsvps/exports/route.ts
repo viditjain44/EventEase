@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "../../../../../lib/prisma";
+import { getCurrentUser } from "../../../../../lib/auth";
 
 function toCsv(rows: Array<Record<string, any>>) {
   if (!rows.length) return "name,email,createdAt\n";
